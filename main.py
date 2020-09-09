@@ -8,16 +8,16 @@ from tensorflow.python.framework.convert_to_constants import convert_variables_t
 K.set_learning_phase(0) #TODO: why set it here?
 
 def keras_to_pb(model, output_dir, output_filename, output_node_names):
-    # Get the name of the input and output nodes
-    in_name = model.layers[0].get_output_at(0).name.split(':')[0]
-
-    if output_node_names is None:
-        output_node_names = [model.layers[-1].get_output_at(0).name.split(':')[0]]
+    
 
     # Convert Keras model to ConcreteFunction
     full_model = tf.function(lambda x: model(x))
+
+
     full_model = full_model.get_concrete_function(
         tf.TensorSpec(model.inputs[0].shape, model.inputs[0].dtype))
+
+
 
     # Get frozen ConcreteFunction
     frozen_func = convert_variables_to_constants_v2(full_model)
@@ -34,6 +34,11 @@ def keras_to_pb(model, output_dir, output_filename, output_node_names):
     print(frozen_func.inputs)
     print("Frozen model outputs: ")
     print(frozen_func.outputs)
+
+    if output_node_names is None:
+        output_node_names = [str(layers[-1])]
+    # Get the name of the input and output nodes
+    in_name = str(layers[0])
 
     # Save frozen graph from frozen ConcreteFunction to hard drive
     tf.io.write_graph(graph_or_graph_def=frozen_func.graph,
@@ -64,4 +69,5 @@ def keras_to_pb(model, output_dir, output_filename, output_node_names):
 model = keras.applications.ResNet50(include_top=True, input_tensor=None, input_shape=None, pooling=None, classes=1000, weights='imagenet')
 
 in_tensor_name, out_tensor_names = keras_to_pb(model, "models", "resnet50.pb", None)
-
+print(f"in_tensor_name: {in_tensor_name}")
+print(f"out_tensor_names: {out_tensor_names}")
