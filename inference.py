@@ -3,7 +3,7 @@ import pycuda.driver as cuda
 import numpy as np
 import pycuda.autoinit 
 
-def allocate_buffer(engine, batch_size, data_type):
+def allocate_buffers(engine, batch_size, data_type):
     """
     allocate buffers for input and output in the device
     """
@@ -19,7 +19,7 @@ def load_images_to_buffer(pics, pagelocked_buffer):
     preprocessed = np.asarray(pics).ravel()
     np.copyto(pagelocked_buffer, preprocessed)
 
-def do_inference(engine, pics, h_input, d_input, h_output, d_output, stream, batch_size, height, width):
+def do_inference(engine, pics, h_input, d_input, h_output, d_output, stream, batch_size, height, width, output_image=False):
     load_images_to_buffer(pics, h_input)
 
     with engine.create_execution_context() as context:
@@ -35,5 +35,8 @@ def do_inference(engine, pics, h_input, d_input, h_output, d_output, stream, bat
         # synchronize the stream
         stream.synchronize()
 
-        out = h_output.reshape((batch_size, -1, height, width)) #TODO: why is the output a picture? Why is it channel first?
+        if output_image:
+          out = h_output.reshape((batch_size, -1, height, width)) #TODO: why is the output a picture? Why is it channel first?
+        else:
+          out = h_output.reshape((batch_size, -1))
         return out
